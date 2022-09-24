@@ -25,7 +25,7 @@ const localStorageStep = () => {
     }
 }
 
-export default function StripeCheckout({ clientSecret }) {
+export default function StripeCheckout() {
     const {
 
         clearCart,
