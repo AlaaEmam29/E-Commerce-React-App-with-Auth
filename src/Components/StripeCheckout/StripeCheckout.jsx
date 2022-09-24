@@ -12,12 +12,6 @@ import FormControl from '@mui/material/FormControl';
 
 import { NavLink } from 'react-router-dom';
 import { useGlobalContext } from '../../context/context.js';
-import {
-  CardElement,
-  useStripe,
-    useElements,
-  PaymentElement
-} from '@stripe/react-stripe-js'
 const steps = ['Shipping address', 'Payment details', 'Review your order'];
 const theme = createTheme();
 const localStorageStep = () => {
@@ -31,26 +25,21 @@ const localStorageStep = () => {
     }
 }
 
-export default function StripeCheckout({clientSecret}) {
+export default function StripeCheckout({ clientSecret }) {
     const {
 
         clearCart,
         clearCheckout,
-        cart,
-        shippingFee,
-        totalAmount
+
 
     } = useGlobalContext()
 
 
 
     const [activeStep, setActiveStep] = useState(localStorageStep);
-      const [succeeded, setSucceeded] = useState(false)
-  const [error, setError] = useState(null)
-  const [processing, setProcessing] = useState('')
-  const [disabled, setDisabled] = useState(true)
-  const stripe = useStripe()
-  const elements = useElements()
+    useEffect(() => {
+        localStorage.setItem('step', activeStep);
+    }, [activeStep]);
     const handleNext = () => {
         setActiveStep(activeStep + 1);
 
@@ -68,84 +57,6 @@ export default function StripeCheckout({clientSecret}) {
 
 
 
-  const [message, setMessage] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (!stripe) {
-      return;
-    }
-
-    const clientSecret = new URLSearchParams(window.location.search).get(
-      "payment_intent_client_secret"
-    );
-
-    if (!clientSecret) {
-      return;
-    }
-
-    stripe.retrievePaymentIntent(clientSecret).then(({ paymentIntent }) => {
-      switch (paymentIntent.status) {
-        case "succeeded":
-          setMessage("Payment succeeded!");
-          break;
-        case "processing":
-          setMessage("Your payment is processing.");
-          break;
-        case "requires_payment_method":
-          setMessage("Your payment was not successful, please try again.");
-          break;
-        default:
-          setMessage("Something went wrong.");
-          break;
-      }
-    });
-  }, [stripe]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!stripe || !elements) {
-      // Stripe.js has not yet loaded.
-      // Make sure to disable form submission until Stripe.js has loaded.
-      return;
-    }
-
-    setIsLoading(true);
-
-    const { error } = await stripe.confirmPayment({
-        elements,
-        clientSecret,
-        payment_method: {
-            card: elements.getElement(CardElement),
-            billing_details: {
-                name: 'Jenny Rosen',
-            },
-        },
-        
-      confirmParams: {
-        // Make sure to change this to your payment completion page
-        return_url: "http://localhost:3000",
-      },
-    });
-
-    // This point will only be reached if there is an immediate error when
-    // confirming the payment. Otherwise, your customer will be redirected to
-    // your `return_url`. For some payment methods like iDEAL, your customer will
-    // be redirected to an intermediate site first to authorize the payment, then
-    // redirected to the `return_url`.
-    if (error.type === "card_error" || error.type === "validation_error") {
-      setMessage(error.message);
-    } else {
-      setMessage("An unexpected error occurred.");
-    }
-
-    setIsLoading(false);
-  };
-
-    useEffect(() => {
-        localStorage.setItem('step', activeStep);
-    }, [activeStep]);
 
 
 
@@ -164,6 +75,8 @@ export default function StripeCheckout({clientSecret}) {
         }
 
     }
+
+
     return (
         <ThemeProvider theme={theme}>
 
@@ -220,11 +133,9 @@ export default function StripeCheckout({clientSecret}) {
                             <FormControl
 
 
-                                onSubmit={handleSubmit}>
+                                onSubmit={(e)=>e.preventDefault()}>
 
-                                    <CardElement id="payment-element"  >
-                                         
-                                        </CardElement>
+                                {getStepContent(activeStep)}
 
 
                                 <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
